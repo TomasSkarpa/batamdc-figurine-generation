@@ -95,6 +95,43 @@
             border-radius: 4px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+        .before-after-panel {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        .image-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .toggle-btn.active {
+            background: #D32F2F;
+            color: white;
+            border-color: #D32F2F;
+        }
+        .image-display {
+            position: relative;
+            min-height: 200px;
+        }
+        .image-display img {
+            max-width: 100%;
+            max-height: 390px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
         .qr-container {
             text-align: center;
             margin: 30px 0;
@@ -180,6 +217,7 @@
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
             z-index: 10;
         }
+
     </style>
 </head>
 <body>
@@ -209,6 +247,18 @@
             <img id="previewImage" src="" alt="Photo Preview">
         </div>
         
+        <div id="beforeAfterPanel" class="before-after-panel hidden">
+            <h3>📷 Image Comparison:</h3>
+            <div class="image-toggle">
+                <button class="toggle-btn active" onclick="showImage('before')">Before</button>
+                <button class="toggle-btn" onclick="showImage('after')">After</button>
+            </div>
+            <div class="image-display">
+                <img id="beforeImage" src="" alt="Original Image">
+                <img id="afterImage" src="" alt="Generated Image" class="hidden">
+            </div>
+        </div>
+        
         <div id="qrContainer" class="qr-container hidden">
             <h3>🎯 QR Code for your image:</h3>
             <img id="qrImage" src="" alt="QR Code">
@@ -225,26 +275,6 @@
 
     <script>
         let mediaStream = null;
-        
-        const dropZone = document.getElementById('dropZone');
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-        
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                uploadFile(files[0]);
-            }
-        });
         
         function showStatus(message, type = 'loading') {
             const status = document.getElementById('status');
@@ -265,11 +295,49 @@
             document.getElementById('progressBar').classList.add('hidden');
         }
         
+        let originalImageSrc = null;
+        
         function showPhotoPreview(imageSrc) {
+            originalImageSrc = imageSrc;
             const preview = document.getElementById('photoPreview');
             const previewImage = document.getElementById('previewImage');
             previewImage.src = imageSrc;
             preview.classList.remove('hidden');
+        }
+        
+        function showBeforeAfterPanel(generatedImageSrc) {
+            const panel = document.getElementById('beforeAfterPanel');
+            const beforeImage = document.getElementById('beforeImage');
+            const afterImage = document.getElementById('afterImage');
+            
+            beforeImage.src = originalImageSrc;
+            afterImage.src = generatedImageSrc;
+            
+            // Hide photo preview and show before/after panel
+            document.getElementById('photoPreview').classList.add('hidden');
+            panel.classList.remove('hidden');
+            
+            // Show after image by default
+            showImage('after');
+        }
+        
+        function showImage(type) {
+            const beforeBtn = document.querySelector('.toggle-btn:first-child');
+            const afterBtn = document.querySelector('.toggle-btn:last-child');
+            const beforeImage = document.getElementById('beforeImage');
+            const afterImage = document.getElementById('afterImage');
+            
+            if (type === 'before') {
+                beforeBtn.classList.add('active');
+                afterBtn.classList.remove('active');
+                beforeImage.classList.remove('hidden');
+                afterImage.classList.add('hidden');
+            } else {
+                beforeBtn.classList.remove('active');
+                afterBtn.classList.add('active');
+                beforeImage.classList.add('hidden');
+                afterImage.classList.remove('hidden');
+            }
         }
 
         async function startCamera() {
@@ -351,6 +419,11 @@
         async function uploadFile(file, fileName = file.name) {
             if (!file) return;
 
+            // Show preview if not already shown
+            if (!originalImageSrc) {
+                showPhotoPreview(URL.createObjectURL(file));
+            }
+
             // Hide camera container during processing
             document.getElementById('cameraContainer').classList.add('hidden');
             
@@ -369,6 +442,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
+                    showBeforeAfterPanel(result.image_url);
                     showQRCode(result.qr_code, result.image_url);
                     showStatus('Photo uploaded successfully! 🎉', 'success');
                 } else {
