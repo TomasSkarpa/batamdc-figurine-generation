@@ -6,22 +6,13 @@ import qrcode
 from PIL import Image
 import base64
 import io
+# Import the API keys directly from the config file
 from config import IMGBB_API_KEY, GEMINI_API_KEY
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
 
 # Import the Google Generative AI library and its types
 import google.generativeai as genai
 
 app = Flask(__name__)
-
-# --- API Keys ---
-# Your hardcoded ImgBB API key
-IMGBB_API_KEY = os.getenv("IMGBB_API_KEY")
-# Your Gemini API Key (IMPORTANT: Replace with your actual key)
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Initialize the Gemini API client
 genai.configure(api_key=GEMINI_API_KEY)
