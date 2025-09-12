@@ -3,47 +3,22 @@ import tempfile
 import os
 import requests
 import qrcode
-from PIL import Image
 import base64
 import io
+from PIL import Image
+from io import BytesIO
+
 # Import the API keys directly from the config file
 from config import IMGBB_API_KEY, GEMINI_API_KEY
 
 # Import the Google Generative AI library and its types
-import google.generativeai as genai
+from google import genai
+from google.genai import types
+
+# Configure the Gemini API with your key
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 app = Flask(__name__)
-
-# Initialize the Gemini API client
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.5-flash-image-preview")
-
-# Set generation and safety configurations
-generation_config = {
-    "temperature": 0.9,
-    "top_p": 1,
-    "top_k": 1,
-    "max_output_tokens": 2048,
-}
-# Adjusted safety settings to prevent image blocking during testing
-safety_settings = [
-    {
-        "category": "HARM_CATEGORY_HARASSMENT",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_HATE_SPEECH",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-        "threshold": "BLOCK_NONE"
-    },
-]
 
 @app.route('/')
 def index():
@@ -70,11 +45,7 @@ def upload_photo():
 
         print(f"Original file saved temporarily at: {original_temp_file.name}")
 
-        # 1. Generate transformed image using Gemini with streaming API
-        # Simplified prompt to improve image generation
-        transformation_prompt = """A 1/7 scale collectible figure of a vintage shoe company employee inspired by the provided photo. The figure is on a classic wooden desk with retro shoe samples and ledgers. The figure is on a circular transparent acrylic base with a retro-style collectible box next to it that says "Bata" in bold red letters."""
-
-        generated_image_data = generate_image_with_gemini(original_temp_file.name, transformation_prompt)
+        generated_image_data = generate_image_with_gemini(original_temp_file.name)
 
         if not generated_image_data:
             os.unlink(original_temp_file.name)
@@ -135,56 +106,42 @@ def upload_photo():
             'error': str(e)
         })
 
-def generate_image_with_gemini(input_image_path, prompt):
+def generate_image_with_gemini(input_image_path):
     try:
-        with open(input_image_path, "rb") as f:
-            input_image_data = f.read()
+        # Read the image file and create a PIL Image object
+        img = Image.open(input_image_path)
 
-        contents = [
-            {
-                "role": "user",
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inline_data": {
-                            "mime_type": "image/jpeg",
-                            "data": base64.b64encode(input_image_data).decode("utf-8"),
-                        }
-                    },
-                ],
-            }
-        ]
+        prompt = (
+            "A 1/7 scale collectible figure of a vintage shoe company employee "
+            "inspired by the provided photo. The figure is on a classic wooden desk "
+            "with retro shoe samples and ledgers. The figure is on a circular transparent "
+            "acrylic base with a retro-style collectible box next to it that says 'Bata' "
+            "in bold red letters."
+        )
 
-        image_data_chunks = []
-        for chunk in model.generate_content_stream(
-            contents=contents,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.9,
-                top_p=1,
-                top_k=1,
-                max_output_tokens=2048,
-            ),
-            safety_settings=[
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-            ],
-        ):
-            if chunk.candidates and chunk.candidates[0].content:
-                for part in chunk.candidates[0].content.parts:
-                    if hasattr(part, "inline_data") and part.inline_data and part.inline_data.data:
-                        image_data_chunks.append(part.inline_data.data)
+        # Call the non-streaming generate_content method
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-image-preview",
+            contents=[prompt, img]
+        )
 
-        if image_data_chunks:
-            full_image_data = base64.b64decode(b"".join(image_data_chunks))
-            return full_image_data
-        else:
-            print("No image data found in streamed response.")
-            return None
+        # Iterate through parts to find and extract image data
+        for part in response.candidates[0].content.parts:
+            if part.text is not None:
+                print(part.text)
+            if hasattr(part, "inline_data") and part.inline_data:
+                # Get the image data from the part
+                image_data = part.inline_data.data
+                return image_data
+        
+        print("No image data found in the response.")
+        return None
 
     except Exception as e:
+        # Enhanced logging to get more details about the error
         print(f"Error during Gemini image generation: {e}")
+        import traceback
+        traceback.print_exc() # This will print the full traceback
         return None
 
 def upload_to_imgbb(file_path, api_key):
