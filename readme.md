@@ -19,3 +19,8 @@ Open your terminal and run the following command to create a virtual environment
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt```
+
+### 2. To run the app
+
+```bash
+python app.py```
