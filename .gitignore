@@ -208,3 +208,4 @@ __marimo__/
 
 # Custom
 config.py
+.DS_Store
