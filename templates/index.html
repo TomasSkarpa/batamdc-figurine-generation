@@ -205,22 +205,27 @@
             position: relative;
             border: 1px solid #eee;
         }
+        .video-wrapper {
+            position: relative;
+            display: inline-block;
+        }
         .camera-container video {
             width: 100%;
             max-width: 720px;
             height: auto;
             border-radius: 5px;
             border: 1px solid #ccc;
+            display: block;
         }
         .countdown {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 8rem;
+            top: 12px;
+            right: 32px;
+            font-size: 6rem;
             font-weight: bold;
             color: black;
             z-index: 10;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
         }
 
     </style>
@@ -243,8 +248,10 @@
         </div>
 
         <div id="cameraContainer" class="camera-container hidden">
-            <video id="cameraFeed" autoplay playsinline></video>
-            <div id="countdown" class="countdown hidden"></div>
+            <div class="video-wrapper">
+                <video id="cameraFeed" autoplay playsinline></video>
+                <div id="countdown" class="countdown hidden"></div>
+            </div>
         </div>
         
         <div id="photoPreview" class="photo-preview hidden">
