@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory, abort
 import tempfile
 import os
 import requests
@@ -24,6 +24,17 @@ app = Flask(__name__)
 def index():
     """Serve the main HTML page"""
     return render_template('index.html')
+
+@app.route('/<path:filename>')
+def favicon(filename):
+    """Serve favicon files from the favicon folder"""
+    favicon_files = ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png', 'site.webmanifest']
+    if filename in favicon_files:
+        from flask import send_from_directory
+        return send_from_directory('favicon', filename)
+    # If not a favicon file, return 404
+    from flask import abort
+    abort(404)
 
 @app.route('/upload_photo', methods=['POST'])
 def upload_photo():
