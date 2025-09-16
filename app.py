@@ -123,11 +123,10 @@ def generate_image_with_gemini(input_image_path):
         img = Image.open(input_image_path)
 
         prompt = (
-            "A 1/7 scale collectible figure of a vintage shoe company employee "
-            "inspired by the provided photo. The background is an office with solid wooden "
-            "furniture and tools for shoe making. The figure is on a classic wooden desk "
-            "with retro shoe samples and ledgers. The figure is on a circular transparent "
-            "acrylic base with a retro-style collectible box next to it that says 'Bata' "
+            "A 1/7 scale collectible figure of a vintage shoe company employee inspired by the provided photo dressed as a shoemaker."
+            "Change the background to an office with solid wooden furniture and tools for shoe making."
+            "The figure is on a classic wooden desk with retro shoe samples and ledgers."
+            "The figure is on a circular transparent acrylic base with a retro-style collectible box next to it that says 'Bata' "
             "in bold red letters."
         )
 
