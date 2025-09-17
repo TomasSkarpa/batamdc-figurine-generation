@@ -118,42 +118,58 @@ def upload_photo():
         })
 
 def generate_image_with_gemini(input_image_path):
-    try:
-        # Read the image file and create a PIL Image object
-        img = Image.open(input_image_path)
+    import time
+    max_retries = 2
+    
+    for attempt in range(max_retries + 1):
+        try:
+            # Read the image file and create a PIL Image object
+            img = Image.open(input_image_path)
 
-        prompt = (
-            "A 1/7 scale collectible figure of a vintage shoe company employee inspired by the provided photo dressed as a shoemaker."
-            "Change the background to an office with solid wooden furniture and tools for shoe making."
-            "The figure is on a classic wooden desk with retro shoe samples and ledgers."
-            "The figure is on a circular transparent acrylic base with a retro-style collectible box next to it that says 'Bata' "
-            "in bold red letters."
-        )
+            prompt = (
+                "A 1/7 scale collectible figure of a vintage shoe company employee inspired by the provided photo dressed as a shoemaker."
+                "Change the background to an office with solid wooden furniture and tools for shoe making."
+                "The figure is on a classic wooden desk with retro shoe samples and ledgers."
+                "The figure is on a circular transparent acrylic base with a retro-style collectible box next to it that says 'Bata' "
+                "in bold red letters."
+            )
 
-        # Call the non-streaming generate_content method
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-image-preview",
-            contents=[prompt, img]
-        )
+            print(f"Gemini API attempt {attempt + 1}/{max_retries + 1}")
+            
+            # Call the non-streaming generate_content method
+            response = client.models.generate_content(
+                model="gemini-2.5-flash-image-preview",
+                contents=[prompt, img]
+            )
 
-        # Iterate through parts to find and extract image data
-        for part in response.candidates[0].content.parts:
-            if part.text is not None:
-                print(part.text)
-            if hasattr(part, "inline_data") and part.inline_data:
-                # Get the image data from the part
-                image_data = part.inline_data.data
-                return image_data
-        
-        print("No image data found in the response.")
-        return None
+            # Iterate through parts to find and extract image data
+            for part in response.candidates[0].content.parts:
+                if part.text is not None:
+                    print(part.text)
+                if hasattr(part, "inline_data") and part.inline_data:
+                    # Get the image data from the part
+                    image_data = part.inline_data.data
+                    return image_data
+            
+            print("No image data found in the response.")
+            return None
 
-    except Exception as e:
-        # Enhanced logging to get more details about the error
-        print(f"Error during Gemini image generation: {e}")
-        import traceback
-        traceback.print_exc() # This will print the full traceback
-        return None
+        except Exception as e:
+            error_str = str(e)
+            print(f"Error during Gemini image generation (attempt {attempt + 1}): {e}")
+            
+            # Check if it's a 500 error and we have retries left
+            if "500" in error_str and attempt < max_retries:
+                print(f"500 error detected, waiting 10 seconds before retry... ({attempt + 1}/{max_retries})")
+                time.sleep(10)
+                continue
+            else:
+                # Final attempt or non-500 error
+                import traceback
+                traceback.print_exc()
+                return None
+    
+    return None
 
 def upload_to_imgbb(file_path, api_key):
     """Upload image to ImgBB and return URL."""

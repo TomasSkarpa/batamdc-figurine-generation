@@ -457,7 +457,7 @@
             }
         }
 
-        async function startCamera() {
+        async function initCamera() {
             try {
                 const constraints = {
                     video: {
@@ -471,12 +471,7 @@
                 const video = document.getElementById('cameraFeed');
                 video.srcObject = mediaStream;
                 
-                document.getElementById('cameraContainer').classList.remove('hidden');
-                document.getElementById('captureBtn').classList.remove('hidden');
-                document.getElementById('startCameraBtn').textContent = '📹 Camera Active';
-                document.getElementById('startCameraBtn').disabled = true;
-                
-                showStatus('Camera started! Position yourself and click "Capture Photo" 📹', 'success');
+                console.log('Camera initialized successfully');
                 
             } catch (error) {
                 console.error('Error accessing camera:', error);
@@ -484,16 +479,28 @@
             }
         }
         
-        function stopCamera() {
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-                mediaStream = null;
+        function startCamera() {
+            if (!mediaStream) {
+                showStatus('Camera not available', 'error');
+                return;
             }
             
+            document.getElementById('cameraContainer').classList.remove('hidden');
+            document.getElementById('captureBtn').classList.remove('hidden');
+            document.getElementById('startCameraBtn').textContent = '📹 Camera Active';
+            document.getElementById('startCameraBtn').disabled = true;
+            
+            showStatus('Camera started! Position yourself and click "Capture Photo" 📹', 'success');
+        }
+        
+        function stopCamera() {
             document.getElementById('cameraContainer').classList.add('hidden');
             document.getElementById('captureBtn').classList.add('hidden');
             document.getElementById('startCameraBtn').textContent = '📹 Start Camera';
             document.getElementById('startCameraBtn').disabled = false;
+            
+            // Re-initialize camera for next use
+            initCamera();
         }
 
         async function capturePhoto() {
@@ -601,6 +608,11 @@
             const urlText = document.getElementById('urlDisplay').textContent;
             window.open(urlText, '_blank');
         }
+        
+        // Initialize camera on page load
+        window.addEventListener('load', () => {
+            initCamera();
+        });
         
         window.addEventListener('beforeunload', () => {
             if (mediaStream) {
