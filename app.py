@@ -1,3 +1,4 @@
+"""Bata Figurine Generator - Flask app that transforms photos into collectible figurines using Gemini AI."""
 import base64
 import io
 import os
@@ -5,7 +6,7 @@ import tempfile
 import time
 import traceback
 
-from flask import Flask, render_template, request, jsonify, send_from_directory, abort
+from flask import Flask, render_template, request, jsonify
 import requests
 import qrcode
 from PIL import Image
@@ -32,14 +33,15 @@ def index():
     return render_template('index.html')
 
 @app.route('/<path:filename>')
-def favicon(filename):
+def serve_favicon(filename):
     """Serve favicon files from the favicon folder"""
-    favicon_files = ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png', 'site.webmanifest']
+    from flask import send_from_directory, abort
+    favicon_files = [
+        'favicon.ico', 'favicon.svg', 'favicon-96x96.png',
+        'apple-touch-icon.png', 'site.webmanifest'
+    ]
     if filename in favicon_files:
-        from flask import send_from_directory
         return send_from_directory('favicon', filename)
-    # If not a favicon file, return 404
-    from flask import abort
     abort(404)
 
 @app.route('/upload_photo', methods=['POST'])
@@ -87,7 +89,10 @@ def upload_photo():
         os.unlink(generated_temp_path)
 
         if not final_imgbb_url:
-            return jsonify({'success': False, 'error': 'Failed to upload generated image to ImgBB.'})
+            return jsonify({
+                'success': False,
+                'error': 'Failed to upload generated image to ImgBB.'
+            })
 
         print(f"Generated image ImgBB URL: {final_imgbb_url}")
 
@@ -95,7 +100,8 @@ def upload_photo():
         print("Generating QR code for the generated image...")
         qr_code_data = generate_qr_code(final_imgbb_url)
 
-        print(f"Final results - image_url: {final_imgbb_url}, qr_code_data: {qr_code_data is not None}")
+        print(f"Final results - image_url: {final_imgbb_url}, "
+              f"qr_code_data: {qr_code_data is not None}")
 
         if final_imgbb_url and qr_code_data:
             return jsonify({
@@ -103,20 +109,20 @@ def upload_photo():
                 'image_url': final_imgbb_url,
                 'qr_code': qr_code_data
             })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to generate QR code'
-            })
+        
+        return jsonify({
+            'success': False,
+            'error': 'Failed to generate QR code'
+        })
 
-    except Exception as e:
+    except (OSError, ValueError, requests.RequestException) as e:
         print(f"Error in upload_photo: {e}")
         # Clean up temp files if they exist
         for temp_file in ['original_temp_file', 'generated_temp_file']:
             if temp_file in locals():
                 try:
                     os.unlink(locals()[temp_file].name)
-                except:
+                except OSError:
                     pass
         return jsonify({
             'success': False,
@@ -133,11 +139,13 @@ def generate_image_with_gemini(input_image_path):
             img = Image.open(input_image_path)
 
             prompt = (
-                "A 1/7 scale collectible figure of a vintage shoe company employee inspired by the provided photo dressed as a shoemaker."
-                "Change the background to an office with solid wooden furniture and tools for shoe making."
-                "The figure is on a classic wooden desk with retro shoe samples and ledgers."
-                "The figure is on a circular transparent acrylic base with a retro-style collectible box next to it that says 'Bata' "
-                "in bold red letters."
+                "A 1/7 scale collectible figure of a vintage shoe company employee "
+                "inspired by the provided photo dressed as a shoemaker. "
+                "Change the background to an office with solid wooden furniture "
+                "and tools for shoe making. The figure is on a classic wooden desk "
+                "with retro shoe samples and ledgers. The figure is on a circular "
+                "transparent acrylic base with a retro-style collectible box next "
+                "to it that says 'Bata' in bold red letters."
             )
 
             print(f"Gemini API attempt {attempt + 1}/{max_retries + 1}")
@@ -169,7 +177,8 @@ def generate_image_with_gemini(input_image_path):
             
             # Check if it's a 500 error and we have retries left
             if "500" in error_str and attempt < max_retries:
-                print(f"500 error detected, waiting 10 seconds before retry... ({attempt + 1}/{max_retries})")
+                print(f"500 error detected, waiting 10 seconds before retry... "
+                      f"({attempt + 1}/{max_retries})")
                 time.sleep(10)
                 continue
             
@@ -201,7 +210,8 @@ def upload_to_imgbb(file_path, api_key):
             print(f"ImgBB API error: {result.get('error', 'Unknown error from ImgBB')}")
             return None, None
         
-        print(f"HTTP error uploading to ImgBB: {response.status_code}, body: {response.text}")
+        print(f"HTTP error uploading to ImgBB: {response.status_code}, "
+              f"body: {response.text}")
 
         return None, None
 
