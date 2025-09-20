@@ -69,7 +69,3 @@ The application will be available at: `http://localhost:8080`
 - **Camera Access**: Allow camera permissions in your browser
 - **Image Upload Fails**: Check file format (supports JPG, PNG, GIF, BMP)
 - **AI Generation Fails**: Verify your Gemini API key has image generation access
-
-## License
-
-This project is for internal use by Bata.
