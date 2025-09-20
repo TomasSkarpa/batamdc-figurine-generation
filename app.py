@@ -21,7 +21,7 @@ except ImportError:
     GEMINI_API_KEY = None
 
 # Import the Google Generative AI library
-from google import genai
+from google import genai  # pylint: disable=no-name-in-module
 
 # Configure the Gemini API with your key
 client = genai.Client(api_key=GEMINI_API_KEY)
