@@ -1,4 +1,5 @@
-"""Bata Figurine Generator - Flask app that transforms photos into collectible figurines using Gemini AI."""
+"""Bata Figurine Generator - Flask app that transforms photos into
+collectible figurines using Gemini AI."""
 import base64
 import io
 import os
@@ -6,7 +7,7 @@ import tempfile
 import time
 import traceback
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory, abort
 import requests
 import qrcode
 from PIL import Image
@@ -35,7 +36,6 @@ def index():
 @app.route('/<path:filename>')
 def serve_favicon(filename):
     """Serve favicon files from the favicon folder"""
-    from flask import send_from_directory, abort
     favicon_files = [
         'favicon.ico', 'favicon.svg', 'favicon-96x96.png',
         'apple-touch-icon.png', 'site.webmanifest'
@@ -109,7 +109,7 @@ def upload_photo():
                 'image_url': final_imgbb_url,
                 'qr_code': qr_code_data
             })
-        
+
         return jsonify({
             'success': False,
             'error': 'Failed to generate QR code'
@@ -132,7 +132,7 @@ def upload_photo():
 def generate_image_with_gemini(input_image_path):
     """Generate image using Gemini AI with retry logic."""
     max_retries = 2
-    
+
     for attempt in range(max_retries + 1):
         try:
             # Read the image file and create a PIL Image object
@@ -167,25 +167,25 @@ def generate_image_with_gemini(input_image_path):
                     # Get the image data from the part
                     image_data = part.inline_data.data
                     return image_data
-            
+
             print("No image data found in the response.")
             return None
 
         except (ValueError, TypeError, AttributeError) as e:
             error_str = str(e)
             print(f"Error during Gemini image generation (attempt {attempt + 1}): {e}")
-            
+
             # Check if it's a 500 error and we have retries left
             if "500" in error_str and attempt < max_retries:
                 print(f"500 error detected, waiting 10 seconds before retry... "
                       f"({attempt + 1}/{max_retries})")
                 time.sleep(10)
                 continue
-            
+
             # Final attempt or non-500 error
             traceback.print_exc()
             return None
-    
+
     return None
 
 def upload_to_imgbb(file_path, api_key):
@@ -209,7 +209,7 @@ def upload_to_imgbb(file_path, api_key):
                 return image_url, None
             print(f"ImgBB API error: {result.get('error', 'Unknown error from ImgBB')}")
             return None, None
-        
+
         print(f"HTTP error uploading to ImgBB: {response.status_code}, "
               f"body: {response.text}")
 
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     print("🚀 Bata Figurine Generator with Gemini AI")
     print("Open your browser and go to: http://localhost:8080")
     print("Make sure your Gemini and ImgBB API keys are valid in config.py")
-    
+
     # Check essential files
     if not os.path.exists('templates/index.html'):
         print("Error: templates/index.html not found")
@@ -261,5 +261,5 @@ if __name__ == '__main__':
         print("Error: static/mdc.jpg not found")
     if not os.path.exists('config.py'):
         print("Error: config.py not found - add your API keys")
-    
+
     app.run(debug=True, host='0.0.0.0', port=8080)
