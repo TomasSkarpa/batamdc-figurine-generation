@@ -135,12 +135,15 @@ def generate_image_with_gemini(input_image_path):
             )
 
             print(f"Gemini API attempt {attempt + 1}/{max_retries + 1}")
-            
-            # Call the non-streaming generate_content method
+
             response = client.models.generate_content(
                 model="gemini-2.5-flash-image-preview",
                 contents=[prompt, img]
             )
+
+            # Check if response has candidates
+            if not response.candidates or len(response.candidates) == 0:
+                raise Exception("No candidates returned from Gemini API")
 
             # Iterate through parts to find and extract image data
             for part in response.candidates[0].content.parts:
