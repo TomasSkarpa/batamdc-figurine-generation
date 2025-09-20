@@ -1,19 +1,20 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory, abort
-import tempfile
-import os
-import requests
-import qrcode
 import base64
 import io
+import os
+import tempfile
+import time
+import traceback
+
+from flask import Flask, render_template, request, jsonify, send_from_directory, abort
+import requests
+import qrcode
 from PIL import Image
-from io import BytesIO
 
 # Import the API keys directly from the config file
 from config import IMGBB_API_KEY, GEMINI_API_KEY
 
-# Import the Google Generative AI library and its types
+# Import the Google Generative AI library
 from google import genai
-from google.genai import types
 
 # Configure the Gemini API with your key
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -50,35 +51,35 @@ def upload_photo():
         print(f"Original file received: {file.filename}")
 
         # Save original file temporarily
-        original_temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-        file.save(original_temp_file.name)
-        original_temp_file.close()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as original_temp_file:
+            file.save(original_temp_file.name)
+            original_temp_path = original_temp_file.name
 
         print(f"Original file saved temporarily at: {original_temp_file.name}")
 
-        generated_image_data = generate_image_with_gemini(original_temp_file.name)
+        generated_image_data = generate_image_with_gemini(original_temp_path)
 
         if not generated_image_data:
-            os.unlink(original_temp_file.name)
+            os.unlink(original_temp_path)
             return jsonify({'success': False, 'error': 'AI transformation failed.'})
 
         print("Gemini transformation successful")
 
         # 2. Save the generated image temporarily
-        generated_temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-        with open(generated_temp_file.name, 'wb') as f:
-            f.write(generated_image_data)
-        generated_temp_file.close()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as generated_temp_file:
+            with open(generated_temp_file.name, 'wb') as f:
+                f.write(generated_image_data)
+            generated_temp_path = generated_temp_file.name
 
         print(f"Generated image saved temporarily at: {generated_temp_file.name}")
 
         # 3. Upload the generated image to ImgBB
         print("Uploading generated image to ImgBB...")
-        final_imgbb_url, _ = upload_to_imgbb(generated_temp_file.name, IMGBB_API_KEY)
+        final_imgbb_url, _ = upload_to_imgbb(generated_temp_path, IMGBB_API_KEY)
 
         # Clean up temp files
-        os.unlink(original_temp_file.name)
-        os.unlink(generated_temp_file.name)
+        os.unlink(original_temp_path)
+        os.unlink(generated_temp_path)
 
         if not final_imgbb_url:
             return jsonify({'success': False, 'error': 'Failed to upload generated image to ImgBB.'})
@@ -118,7 +119,7 @@ def upload_photo():
         })
 
 def generate_image_with_gemini(input_image_path):
-    import time
+    """Generate image using Gemini AI with retry logic."""
     max_retries = 2
     
     for attempt in range(max_retries + 1):
@@ -143,7 +144,7 @@ def generate_image_with_gemini(input_image_path):
 
             # Check if response has candidates
             if not response.candidates or len(response.candidates) == 0:
-                raise Exception("No candidates returned from Gemini API")
+                raise ValueError("No candidates returned from Gemini API")
 
             # Iterate through parts to find and extract image data
             for part in response.candidates[0].content.parts:
@@ -157,7 +158,7 @@ def generate_image_with_gemini(input_image_path):
             print("No image data found in the response.")
             return None
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError) as e:
             error_str = str(e)
             print(f"Error during Gemini image generation (attempt {attempt + 1}): {e}")
             
@@ -166,11 +167,10 @@ def generate_image_with_gemini(input_image_path):
                 print(f"500 error detected, waiting 10 seconds before retry... ({attempt + 1}/{max_retries})")
                 time.sleep(10)
                 continue
-            else:
-                # Final attempt or non-500 error
-                import traceback
-                traceback.print_exc()
-                return None
+            
+            # Final attempt or non-500 error
+            traceback.print_exc()
+            return None
     
     return None
 
@@ -186,21 +186,21 @@ def upload_to_imgbb(file_path, api_key):
             "image": image_data,
         }
 
-        response = requests.post(url, data=payload)
+        response = requests.post(url, data=payload, timeout=30)
 
         if response.status_code == 200:
             result = response.json()
             if result['success']:
                 image_url = result['data']['url']
                 return image_url, None
-            else:
-                print(f"ImgBB API error: {result.get('error', 'Unknown error from ImgBB')}")
-        else:
-            print(f"HTTP error uploading to ImgBB: {response.status_code}, body: {response.text}")
+            print(f"ImgBB API error: {result.get('error', 'Unknown error from ImgBB')}")
+            return None, None
+        
+        print(f"HTTP error uploading to ImgBB: {response.status_code}, body: {response.text}")
 
         return None, None
 
-    except Exception as e:
+    except requests.RequestException as e:
         print(f"Error uploading to ImgBB: {e}")
         return None, None
 
@@ -230,7 +230,7 @@ def generate_qr_code(url):
         print("QR code generated successfully")
         return qr_code_data
 
-    except Exception as e:
+    except (OSError, ValueError) as e:
         print(f"Error generating QR code: {e}")
         return None
 
