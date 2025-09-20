@@ -1,22 +1,12 @@
 # Bata Figurine Generation with Gemini AI
 
-A Flask web application that transforms uploaded photos into collectible figurine images using Google's Gemini AI, then generates QR codes for easy sharing.
-
-## Features
-
-- 📷 **Photo Upload**: Upload images via file picker or camera capture
-- 🤖 **AI Transformation**: Convert photos into vintage Bata employee figurines using Gemini AI
-- 🔄 **Before/After Comparison**: Toggle between original and generated images
-- 📱 **QR Code Generation**: Automatic QR code creation for sharing generated images
-- 🌐 **Cloud Storage**: Images hosted on ImgBB for reliable access
-- 📱 **Responsive Design**: Works on desktop and mobile devices
+Take a photo with your device camera or upload from file manager. Uses Google's Gemini AI to generate a shoemaker collectible figurine. Share through QR code link, ImgBB, or Airdrop. Great for printing out!
 
 ## Prerequisites
 
 - **Python 3.x**
 - **Google Gemini API Key** with image generation access
 - **ImgBB API Key** for image hosting
-- A virtual environment is highly recommended
 
 ## Setup
 
@@ -53,34 +43,6 @@ python app.py
 ```
 
 The application will be available at: `http://localhost:8080`
-
-## Project Structure
-
-```
-batamdc-figurine-generation/
-├── app.py                 # Main Flask application
-├── config.py             # API keys configuration
-├── requirements.txt      # Python dependencies
-├── templates/
-│   └── index.html        # Main web interface
-├── static/
-│   └── mdc.jpg          # Company logo
-├── favicon/              # Favicon files
-│   ├── favicon.ico
-│   ├── favicon.svg
-│   ├── favicon-96x96.png
-│   ├── apple-touch-icon.png
-│   └── site.webmanifest
-└── README.md
-```
-
-## How It Works
-
-1. **Upload**: User uploads a photo via file picker or camera
-2. **AI Processing**: Gemini AI transforms the photo into a collectible figurine scene
-3. **Hosting**: Generated image is uploaded to ImgBB for permanent hosting
-4. **QR Generation**: QR code is created linking to the hosted image
-5. **Display**: Before/after comparison panel shows original vs generated image
 
 ## Dependencies
 
