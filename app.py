@@ -235,32 +235,16 @@ def generate_qr_code(url):
         return None
 
 if __name__ == '__main__':
-    print("🚀 Starting Photo Upload QR Generator with Gemini AI Image Generation...")
-    print("📱 Open your browser and go to: http://localhost:8080")
-    print("🔑 ImgBB API key is hardcoded - ready to go!")
-    print("🔑 Make sure your Gemini API key is valid and has image generation access.")
-    print("📁 Make sure you have a 'templates' folder with 'index.html'")
-    print("🖼️ Place your 'mdc.jpg' logo in a 'static' folder.")
-
-    # Check if templates folder exists
-    if not os.path.exists('templates'):
-        print("❌ 'templates' folder not found!")
-        print("   Create it with: mkdir templates")
-        print("   Then save the HTML file as templates/index.html")
-    elif not os.path.exists('templates/index.html'):
-        print("❌ 'templates/index.html' not found!")
-        print("   Save the HTML file as templates/index.html")
-    else:
-        print("✅ Template files found.")
-
-    if not os.path.exists('static'):
-        print("❌ 'static' folder not found!")
-        print("   Create it with: mkdir static")
-        print("   Place 'mdc.jpg' inside it.")
-    elif not os.path.exists('static/mdc.jpg'):
-        print("❌ 'static/mdc.jpg' not found!")
-        print("   Place your 'mdc.jpg' logo in the 'static' folder.")
-    else:
-        print("✅ Static files found - starting server...")
-
+    print("🚀 Bata Figurine Generator with Gemini AI")
+    print("Open your browser and go to: http://localhost:8080")
+    print("Make sure your Gemini and ImgBB API keys are valid in config.py")
+    
+    # Check essential files
+    if not os.path.exists('templates/index.html'):
+        print("Error: templates/index.html not found")
+    if not os.path.exists('static/mdc.jpg'):
+        print("Error: static/mdc.jpg not found")
+    if not os.path.exists('config.py'):
+        print("Error: config.py not found - add your API keys")
+    
     app.run(debug=True, host='0.0.0.0', port=8080)
