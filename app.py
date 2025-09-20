@@ -11,7 +11,12 @@ import qrcode
 from PIL import Image
 
 # Import the API keys directly from the config file
-from config import IMGBB_API_KEY, GEMINI_API_KEY
+try:
+    from config import IMGBB_API_KEY, GEMINI_API_KEY
+except ImportError:
+    # Handle missing config.py for CI/CD or fresh installs
+    IMGBB_API_KEY = None
+    GEMINI_API_KEY = None
 
 # Import the Google Generative AI library
 from google import genai

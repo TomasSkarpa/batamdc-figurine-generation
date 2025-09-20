@@ -1,0 +1,5 @@
+# config.py.example
+# Copy this file to config.py and add your actual API keys
+
+GEMINI_API_KEY = "your_gemini_api_key_here"
+IMGBB_API_KEY = "your_imgbb_api_key_here"
